@@ -505,6 +505,15 @@ table.col tr.ln td{border-bottom:3px solid var(--ink)}
 .mm-grades{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;overflow:visible}
 .mm-grades .chip{padding:0;font-size:18px;font-weight:800}
 
+.ls-q:has(.st-head){justify-content:flex-start;font-size:clamp(20px,5.4vw,26px);gap:8px}
+.st-head{font-size:clamp(26px,7vw,34px)}
+.st-head table.col{font-size:clamp(26px,7vw,34px)}
+.st-div{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+table.col tr.res td{color:var(--tomato)}
+.st-log{width:100%;max-width:460px;max-height:30vh;overflow-y:auto;background:var(--card);border-radius:16px;box-shadow:0 3px 0 var(--shadow);padding:8px 12px;font-size:16px;font-weight:700;line-height:1.45;text-align:left}
+.st-log i{color:var(--muted);font-weight:600}
+.st-ask{font-size:clamp(20px,5.4vw,26px);font-weight:800}
+
 /* WIN */
 .overlay{position:absolute;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(32,48,71,.35)}
 .win-card{background:var(--card);border-radius:32px;padding:22px 20px 20px;width:min(360px,100%);text-align:center;box-shadow:0 8px 0 var(--shadow);animation:pop .35s cubic-bezier(.3,1.5,.6,1)}
@@ -3144,6 +3153,44 @@ function divSteps(n, d) {
   }
   return { steps: out, q: +q, r: cur };
 }
+// written division, one small step at a time: "how many times does d fit into cur?" then "what is left?"
+function divGuide(n, d) {
+  const s = String(n), steps = []; let cur = 0, q = '';
+  const head = qq => `<span class="st-div">${fm(n)} : ${d} = <b>${qq}</b><span class="qbox">?</span></span>`;
+  const est = c => { if (d < 10) return `Násobilka: které číslo krát ${d} je nejblíž ${c}, ale ne víc?`; const D = Math.round(d / 10) * 10; return `Odhad: ${d} je asi ${D}. ${c} : ${D} je asi ${Math.floor(c / D)}. Zkontroluj, že ${Math.floor(c / D)} · ${d} není víc než ${c}.`; };
+  for (let i = 0; i < s.length; i++) {
+    cur = cur * 10 + +s[i];
+    if (q === '' && cur < d && i < s.length - 1) continue;
+    const k = Math.floor(cur / d), r = cur - k * d, next = i < s.length - 1 ? s[i + 1] : null;
+    const tail = next != null ? `, připíšeme ${next} → <b>${r * 10 + +next}</b>` : (r ? ` → zbytek <b>${r}</b>` : ' → beze zbytku');
+    steps.push({ head: head(q), ask: `Kolikrát se <b>${d}</b> vejde do <b>${cur}</b>?`, a: k, hint: est(cur), done: `${cur} : ${d} = <b>${k}</b>` });
+    q += k;
+    if (k > 0) steps.push({ head: head(q), ask: `${k} · ${d} = ${k * d}. Kolik zbude z <b>${cur}</b>?`, a: r, hint: `${cur} − ${k * d}`, done: `${cur} − ${k * d} = <b>${r}</b>${tail}` });
+    else steps[steps.length - 1].done += ` (zbude ${r}${next != null ? `, připíšeme ${next} → <b>${r * 10 + +next}</b>` : ''})`;
+    cur = r;
+  }
+  return { steps, q: +q, r: cur };
+}
+// written multiplication: column by column with carries (one-digit multiplier), or partial products (two-digit)
+function mulGuide(a, b) {
+  const steps = [];
+  if (b < 10) {
+    const ds = String(a).split('').reverse(); let carry = 0, res = '';
+    ds.forEach((dch, i) => {
+      const p = +dch * b + carry, last = i === ds.length - 1;
+      steps.push({ head: column([a, b], '·').replace('</tbody>', `<tr class="res"><td></td>${String(res).padStart(String(a).length + 1, ' ').split('').map(c => `<td>${c.trim()}</td>`).join('')}</tr></tbody>`),
+        ask: `${dch} · ${b}${carry ? ` + ${carry} (zapamatované)` : ''} = ?`, a: p, hint: carry ? `${dch} · ${b} = ${+dch * b}, přičti ${carry}.` : `Násobilka: ${dch} · ${b}`,
+        done: last ? `${dch} · ${b}${carry ? ' + ' + carry : ''} = ${p} → napíšu <b>${p}</b>` : `${dch} · ${b}${carry ? ' + ' + carry : ''} = ${p} → napíšu <b>${p % 10}</b>${p >= 10 ? `, pamatuju si ${Math.floor(p / 10)}` : ''}` });
+      res = (last ? String(p) : String(p % 10)) + res; carry = last ? 0 : Math.floor(p / 10);
+    });
+  } else {
+    const u = b % 10, t = Math.floor(b / 10), p1 = a * u, p2 = a * t, hd = column([a, b], '·');
+    steps.push({ head: hd, ask: `Nejdřív jednotky: ${a} · ${u} = ?`, a: p1, hint: `${a} · ${u} = ${Math.floor(a / 10) * 10} · ${u} + ${a % 10} · ${u}`, done: `${a} · ${u} = <b>${p1}</b>` });
+    steps.push({ head: hd, ask: `Teď desítky: ${a} · ${t} = ?`, a: p2, hint: `${a} · ${t} = ${Math.floor(a / 10) * 10} · ${t} + ${a % 10} · ${t}`, done: `${a} · ${t} = <b>${p2}</b> → píšu o místo doleva (${p2}0)` });
+    steps.push({ head: hd, ask: `Sečti: ${p1} + ${p2}0 = ?`, a: p1 + p2 * 10, hint: 'Sečti pod sebou.', done: `${p1} + ${p2 * 10} = <b>${p1 + p2 * 10}</b>` });
+  }
+  return steps;
+}
 const ROMAN = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
 const toRoman = n => ROMAN.reduce((s, [v, r]) => { while (n >= v) { s += r; n -= v; } return s; }, '');
 function clockSvg(h, m) {
@@ -3249,15 +3296,14 @@ const TOPICS = [
       return Math.random() < .6 ? { q: `${n} ${b} = ${box} ${s}`, a: n * k, unit: s, hint: `1 ${b} = ${k} ${s}`, explain: `${n} · ${k} = <b>${n * k} ${s}</b>` }
         : { q: `${n * k} ${s} = ${box} ${b}`, a: n, unit: b, hint: `1 ${b} = ${k} ${s}`, explain: `${n * k} : ${k} = <b>${n} ${b}</b>` }; } },
   // ---------- 4. třída ----------
-  { id: 'g4-colmul', grade: 4, ico: '📝', name: 'Písemné násobení',
+  { id: 'g4-colmul', grade: 4, ico: '📝', name: 'Písemné násobení (krok za krokem)',
     learn: '<p>Piš pod sebe a násob <b>zprava</b>: jednotky, desítky, stovky. Co přeteče přes 9, si <b>pamatuj</b> a přičti k dalšímu řádu.</p><p>Při násobení dvojciferným číslem píšeš druhý mezivýsledek <b>o jedno místo doleva</b> a nakonec sečteš.</p>',
-    gen() { const two = Math.random() < .4, a = two ? ri(12, 99) : ri(102, 999), b = two ? ri(12, 49) : ri(3, 9);
-      const ex = two ? `${a} · ${b % 10} = ${a * (b % 10)}, ${a} · ${Math.floor(b / 10)} = ${a * Math.floor(b / 10)} (posunout o místo doleva), ${a * (b % 10)} + ${a * Math.floor(b / 10) * 10} = <b>${a * b}</b>` : `${a} · ${b} = <b>${a * b}</b>`;
-      return { q: column([a, b], '·'), a: a * b, hint: 'Násob zprava a pamatuj si přenos.', explain: ex }; } },
-  { id: 'g4-coldiv', grade: 4, ico: '📝', name: 'Písemné dělení',
+    gen() { const two = Math.random() < .4, a = two ? ri(12, 99) : ri(102, 999), b = two ? pk([...Array(38).keys()].map(i => i + 12).filter(x => x % 10)) : ri(3, 9), steps = mulGuide(a, b);
+      return { q: column([a, b], '·'), a: a * b, steps, hint: 'Násob zprava a pamatuj si přenos.', explain: steps.map(x => x.done).join('<br>') + `<br>→ <b>${a * b}</b>` }; } },
+  { id: 'g4-coldiv', grade: 4, ico: '📝', name: 'Písemné dělení (krok za krokem)',
     learn: '<p>Děl <b>zleva</b>. 745 : 3 → 7 : 3 = 2 (zbude 1), připiš 4 → 14 : 3 = 4 (zbude 2), připiš 5 → 25 : 3 = 8 (zbude 1).</p><p>Výsledek <b>248, zbytek 1</b>. Zkouška: 248 · 3 + 1 = 745.</p>',
-    gen() { const d = ri(2, 9), n = ri(100, 999 * (Math.random() < .3 ? 9 : 1)), { steps, q, r } = divSteps(n, d);
-      return { q: `${fm(n)} : ${d} =`, a: [q, r], labels: ['', 'zbytek'], hint: 'Děl zleva, postupně připisuj další číslice.', explain: steps.join('<br>') + `<br>→ <b>${q}, zbytek ${r}</b>` }; } },
+    gen() { const d = ri(2, 9), n = ri(100, 999 * (Math.random() < .3 ? 9 : 1)), { steps, q, r } = divGuide(n, d);
+      return { q: `${fm(n)} : ${d} =`, a: [q, r], steps, final: `${fm(n)} : ${d} = <b>${q}</b>${r ? `, zbytek <b>${r}</b>` : ''}`, hint: 'Děl zleva, postupně připisuj další číslice.', explain: steps.map(x => x.done).join('<br>') + `<br>→ <b>${q}, zbytek ${r}</b>` }; } },
   { id: 'g4-big', grade: 4, ico: '🏔️', name: 'Čísla do milionu',
     learn: '<p>Velká čísla čti po trojicích: 245 830 = dvě stě čtyřicet pět <b>tisíc</b> osm set třicet.</p><p>Zaokrouhlení na tisíce: rozhoduje číslice <b>stovek</b>. 245 830 → <b>246 000</b>.</p>',
     gen() { if (Math.random() < .5) { const n = ri(10000, 999999), to = pk([1000, 10000, 100]), r = Math.round(n / to) * to; return { q: `Zaokrouhli <b>${fm(n)}</b> na ${({ 100: 'stovky', 1000: 'tisíce', 10000: 'desetitisíce' })[to]}`, a: r, hint: 'Rozhoduje číslice hned za tím místem.', explain: `<b>${fm(r)}</b>` }; }
@@ -3286,10 +3332,10 @@ const TOPICS = [
       if (t === 3) { const a = ri(3, 9), b = ri(2, 6); return { q: `${g} má ${a} triček a ${b} sukně. Kolika způsoby se může obléknout (tričko + sukně)?`, a: a * b, hint: 'Ke každému tričku každá sukně.', explain: `${a} · ${b} = <b>${a * b}</b>` }; }
       const v = ri(8, 15), m = ri(3, 6); return { q: `Kobyla ${h} uběhne za minutu ${v * 10} m. Kolik metrů uběhne za ${m} minut?`, a: v * 10 * m, unit: 'm', hint: 'Každou minutu stejně → násobení.', explain: `${v * 10} · ${m} = <b>${v * 10 * m} m</b>` }; } },
   // ---------- 5. třída ----------
-  { id: 'g5-coldiv2', grade: 5, ico: '📝', name: 'Dělení dvojciferným číslem',
+  { id: 'g5-coldiv2', grade: 5, ico: '📝', name: 'Dělení dvojciferným číslem (krok za krokem)',
     learn: '<p>912 : 24 → kolikrát se 24 vejde do 91? Odhad: 90 : 24 ≈ 3. 3 · 24 = 72, zbude 19.</p><p>Připiš 2 → 192 : 24 = 8 (8 · 24 = 192). Výsledek <b>38</b>, zbytek 0.</p><p>Tip na odhad: zaokrouhli dělitele na desítky (24 → 20 nebo 25).</p>',
-    gen() { const d = ri(12, 35), q = ri(12, 60), r = Math.random() < .5 ? 0 : ri(1, d - 1), n = d * q + r, { steps } = divSteps(n, d);
-      return { q: `${fm(n)} : ${d} =`, a: [q, r], labels: ['', 'zbytek'], hint: `Odhadni: kolikrát se ${d} vejde do prvních dvou nebo tří číslic?`, explain: steps.join('<br>') + `<br>→ <b>${q}, zbytek ${r}</b>` }; } },
+    gen() { const d = ri(12, 35), q0 = ri(12, 60), r0 = Math.random() < .5 ? 0 : ri(1, d - 1), n = d * q0 + r0, { steps, q, r } = divGuide(n, d);
+      return { q: `${fm(n)} : ${d} =`, a: [q, r], steps, final: `${fm(n)} : ${d} = <b>${q}</b>${r ? `, zbytek <b>${r}</b>` : ''}`, hint: `Odhadni: kolikrát se ${d} vejde do prvních dvou nebo tří číslic?`, explain: steps.map(x => x.done).join('<br>') + `<br>→ <b>${q}, zbytek ${r}</b>` }; } },
   { id: 'g5-dec', grade: 5, ico: '🔸', name: 'Desetinná čísla',
     learn: '<p>Desetinná čísla piš pod sebe tak, aby <b>čárka byla pod čárkou</b>. Chybějící místa doplň nulou.</p><p>3,5 + 1,25 = 3,50 + 1,25 = <b>4,75</b>.</p>',
     gen() { const a = ri(10, 999) / (Math.random() < .5 ? 10 : 100), b = ri(10, 500) / pk([10, 100]), da = String(a).split('.')[1]?.length || 0, db = String(b).split('.')[1]?.length || 0, dd = Math.max(da, db);
@@ -3450,11 +3496,11 @@ function nextQuestion() {
   renderDots($('#lsDots'), LS_N, L.done);
   if (L.done >= LS_N) { finishLesson(); return; }
   L.qt = L.topic || pickDaily();
-  L.q = L.qt.gen(); L.tries = 0; L.field = 0;
-  const n = Array.isArray(L.q.a) ? L.q.a.length : 1;
+  L.q = L.qt.gen(); L.tries = 0; L.field = 0; L.si = 0; L.stTries = 0; L.log = [];
+  const n = L.q.steps ? 1 : Array.isArray(L.q.a) ? L.q.a.length : 1;
   L.vals = Array(n).fill('');
   $('#lsTopic').textContent = L.topic ? '' : `${L.qt.grade}. tř. · ${L.qt.name}`;
-  $('#lsQ').innerHTML = L.q.q;
+  if (L.q.steps) renderStep(); else $('#lsQ').innerHTML = L.q.q;
   $('#lsMsg').innerHTML = ''; $('#lsMsg').className = 'ls-msg';
   if (L.q.choices) {
     $('#lsAns').innerHTML = ''; $('#lsPad').hidden = true;
@@ -3466,10 +3512,15 @@ function nextQuestion() {
   }
   const q = $('#lsQ'); q.classList.remove('in'); void q.offsetWidth; q.classList.add('in');
 }
+function renderStep() {
+  const st = L.q.steps[L.si];
+  $('#lsQ').innerHTML = `<div class="st-head">${st ? st.head : L.q.final || L.q.q}</div>${L.log.length ? `<div class="st-log">${L.log.map(x => `<div>${x}</div>`).join('')}</div>` : ''}${st ? `<div class="st-ask">${st.ask}</div>` : ''}`;
+  const lg = $('#lsQ .st-log'); if (lg) lg.scrollTop = lg.scrollHeight;
+}
 function renderAns() {
-  const labels = L.q.labels || [];
+  const labels = L.q.steps ? [] : L.q.labels || [];
   $('#lsAns').innerHTML = L.vals.map((v, i) => `${labels[i] ? `<span class="ls-lab">${labels[i]}</span>` : ''}<button class="ls-box${i === L.field ? ' on' : ''}" data-f="${i}">${v || '&nbsp;'}</button>`).join('') +
-    (L.q.unit ? `<span class="ls-unit">${L.q.unit}</span>` : '');
+    (L.q.unit && !L.q.steps ? `<span class="ls-unit">${L.q.unit}</span>` : '');
 }
 $('#lsAns').addEventListener('click', ev => { const b = ev.target.closest('.ls-box'); if (!b) return; L.field = +b.dataset.f; renderAns(); });
 function padKey(k) {
@@ -3493,7 +3544,7 @@ document.addEventListener('keydown', ev => {
   else if (ev.key === 'Tab' && L && L.vals.length > 1) { ev.preventDefault(); L.field = (L.field + 1) % L.vals.length; renderAns(); }
 });
 $('#lsChoices').addEventListener('click', ev => { const b = ev.target.closest('.ls-choice'); if (!b || L.lock) return; L.vals = [b.dataset.c]; check(b); });
-$('#lsHint').addEventListener('click', () => { if (!L || !L.q) return; $('#lsMsg').className = 'ls-msg hint'; $('#lsMsg').innerHTML = `💡 ${L.q.hint}`; });
+$('#lsHint').addEventListener('click', () => { if (!L || !L.q) return; const st = L.q.steps && L.q.steps[L.si]; $('#lsMsg').className = 'ls-msg hint'; $('#lsMsg').innerHTML = `💡 ${st ? st.hint : L.q.hint}`; });
 const norm = s => String(s).replace(/\s| /g, '').replace('−', '-').replace(',', '.');
 function same(v, a) {
   const x = norm(v), y = norm(a);
@@ -3501,21 +3552,41 @@ function same(v, a) {
   const nx = parseFloat(x), ny = parseFloat(y);
   return x !== '' && !isNaN(nx) && /^-?\d*\.?\d+$/.test(x) && Math.abs(nx - ny) < 1e-9;
 }
+function checkStep() {
+  const st = L.q.steps[L.si];
+  if (L.vals[0] === '') { $('#lsMsg').className = 'ls-msg'; $('#lsMsg').textContent = 'Napiš výsledek tohohle kroku.'; return; }
+  if (same(L.vals[0], st.a)) {
+    L.log.push('✔️ ' + st.done); L.si++; L.stTries = 0; L.vals = ['']; tone(760, .08, 'sine', .1);
+    $('#lsMsg').className = 'ls-msg ok'; $('#lsMsg').textContent = L.si < L.q.steps.length ? pk(['Ano!', 'Správně!', 'Přesně!', 'Dobře!']) : '';
+    if (L.si >= L.q.steps.length) { renderStep(); L.vals = ['x']; finishQuestion(); return; }
+    renderStep(); renderAns(); return;
+  }
+  L.stTries++; tone(200, .14, 'sine', .1);
+  const a = $('#lsAns'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+  L.vals = ['']; renderAns();
+  if (L.stTries === 1) { $('#lsMsg').className = 'ls-msg bad'; $('#lsMsg').innerHTML = `Ještě jednou. 💡 ${st.hint}`; return; }
+  // second miss in a step: show it and carry on with the next step
+  L.tries = 1; L.log.push('➡️ ' + st.done + ' <i>(ukázka)</i>'); L.si++; L.stTries = 0;
+  $('#lsMsg').className = 'ls-msg bad'; $('#lsMsg').innerHTML = `Správně je <b>${st.a}</b>. Podívej se na řádek nahoře a pokračuj.`;
+  if (L.si >= L.q.steps.length) { renderStep(); finishQuestion(); return; }
+  renderStep();
+}
+function finishQuestion(btn) {
+  L.lock = true;
+  if (btn) btn.classList.add('ok');
+  $('#lsMsg').className = 'ls-msg ok'; $('#lsMsg').innerHTML = L.q.steps ? `${pk(['Hotovo!', 'Výborně!', 'Paráda!'])} ${L.q.final || ''}` : pk(['Správně!', 'Výborně!', 'Super!', 'Paráda!', 'Přesně tak!']);
+  if (L.tries) L.mistakes++;
+  const tile = $(`#lsCover i[data-k="${L.order[L.done]}"]`); if (tile) tile.classList.add('off');
+  L.done++; sfx.snap();
+  const r = $('#lsQ').getBoundingClientRect(); sparkleAt(r.left + r.width / 2, r.top + r.height / 2, 14);
+  setTimeout(() => { L.lock = false; nextQuestion(); }, L.q.steps ? 1800 : 900);
+}
 function check(btn) {
+  if (L.q.steps) { checkStep(); return; }
   const ans = Array.isArray(L.q.a) ? L.q.a : [L.q.a];
   if (L.vals.some(v => v === '')) { $('#lsMsg').className = 'ls-msg'; $('#lsMsg').textContent = 'Vyplň všechna políčka.'; return; }
   const ok = ans.every((a, i) => same(L.vals[i], a));
-  if (ok) {
-    L.lock = true;
-    if (btn) btn.classList.add('ok');
-    $('#lsMsg').className = 'ls-msg ok'; $('#lsMsg').innerHTML = pk(['Správně!', 'Výborně!', 'Super!', 'Paráda!', 'Přesně tak!']);
-    if (L.tries) L.mistakes++;
-    const tile = $(`#lsCover i[data-k="${L.order[L.done]}"]`); if (tile) tile.classList.add('off');
-    L.done++; sfx.snap();
-    const r = $('#lsQ').getBoundingClientRect(); sparkleAt(r.left + r.width / 2, r.top + r.height / 2, 14);
-    setTimeout(() => { L.lock = false; nextQuestion(); }, 900);
-    return;
-  }
+  if (ok) { finishQuestion(btn); return; }
   L.tries++;
   if (btn) { btn.classList.remove('bad'); void btn.offsetWidth; btn.classList.add('bad'); }
   tone(200, .14, 'sine', .1); tone(160, .16, 'sine', .08, .08);
