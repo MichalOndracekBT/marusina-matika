@@ -1,6 +1,6 @@
 # Marušina škola
 
-Matika a čeština pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.github.io/marusina-matika/
+Matika a čeština pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.github.io/marusky-apka/
 
 ## Zadání (jak to funguje)
 
