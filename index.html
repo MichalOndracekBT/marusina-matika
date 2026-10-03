@@ -1967,21 +1967,21 @@ const EX_POOL = {
   4: [24, 28, 32, 36, 42, 45, 48, 54, 56, 63, 64, 72, 81, 49, 35],
   5: [24, 28, 32, 36, 42, 45, 48, 54, 56, 63, 64, 72, 81, 49, 35]
 };
+// coloring examples stay at 3rd-grade level at most (from 3rd grade on: the multiplication table)
+const exLvl = () => Math.min(grade, 3);
 function exVals(pg) {
-  const rnd = seeded(hash(pg.id + ':' + grade)), pool = EX_POOL[grade].slice();
+  const L = exLvl(), rnd = seeded(hash(pg.id + ':' + L)), pool = EX_POOL[L].slice();
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool;
 }
 function exFor(v, rnd) {
-  const R = n => Math.floor(rnd() * n), opts = [];
-  if (grade <= 2) { const a = 1 + R(v - 1), b = 1 + R(grade === 1 ? 5 : 20); opts.push(`${a}+${v - a}`, `${v + b}−${b}`); }
-  if (grade >= 2) for (let a = 2; a <= 10; a++) if (v % a === 0 && v / a >= 2 && v / a <= 10) opts.push(`${a}·${v / a}`);
-  if (grade >= 3) for (let d = 2; d <= 9; d++) if (grade >= 4 || v * d <= 100) opts.push(`${v * d}:${d}`);
-  if (grade >= 4) { const a = 2 + R(5), b = 2 + R(5); if (v - a * b > 0) opts.push(`${a}·${b}+${v - a * b}`); }
+  const L = exLvl(), R = n => Math.floor(rnd() * n), opts = [];
+  if (L <= 2) { const a = 1 + R(v - 1), b = 1 + R(L === 1 ? 5 : 20); opts.push(`${a}+${v - a}`, `${v + b}−${b}`); }
+  if (L >= 2) for (let a = 2; a <= 10; a++) if (v % a === 0 && v / a >= 2 && v / a <= 10) opts.push(`${a}·${v / a}`);
   return opts[R(opts.length)] || String(v);
 }
 CL_CFG.swatchText = (pg, n) => exVals(pg)[n - 1];
-CL_CFG.numText = (pg, i, n) => exFor(exVals(pg)[n - 1], seeded(hash(pg.id + ':' + grade + ':' + i)));
+CL_CFG.numText = (pg, i, n) => exFor(exVals(pg)[n - 1], seeded(hash(pg.id + ':' + exLvl() + ':' + i)));
 
 /* ---------- COLORING ---------- */
 const CL_NS = 'http://www.w3.org/2000/svg';
@@ -3838,7 +3838,9 @@ const CARDS = [
 ];
 const RAR = { 1: ['Běžná', '#9FD8FF'], 2: ['Vzácná', '#D9C4FF'], 3: ['Legendární', '#FFD36E'] };
 const mmGet = (k, d) => store.get('mm-' + k, d), mmSet = (k, v) => store.set('mm-' + k, v);
-let grade = mmGet('grade', 5), subj = mmGet('subj', 'ma');
+// 5th grade only just started: default to 4 (one-time switch for anyone still on the old default)
+if (!mmGet('grade-v2', false)) { if (mmGet('grade', 5) === 5) mmSet('grade', 4); mmSet('grade-v2', true); }
+let grade = mmGet('grade', 4), subj = mmGet('subj', 'ma');
 const subjOf = t => t.subj || 'ma';
 const starsOf = () => mmGet('stars', {});
 const totalStars = () => Object.values(starsOf()).reduce((a, b) => a + b, 0);
