@@ -1,0 +1,12 @@
+{
+  "name": "Marušina matika",
+  "short_name": "Matika",
+  "lang": "cs",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF1DE",
+  "theme_color": "#FFF1DE",
+  "icons": [{ "src": "apple-touch-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

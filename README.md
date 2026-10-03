@@ -1,0 +1,22 @@
+# Marušina matika
+
+Matika pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.github.io/marusina-matika/
+
+## Zadání (jak to funguje)
+
+- **Výběr třídy 1.–5.** – výchozí je 5. třída, starší učivo jde kdykoli zopakovat.
+- **35 témat podle učiva základní školy**
+  - 1. tř.: sčítání a odčítání do 10 a do 20, přechod přes desítku, porovnávání, doplň číslo
+  - 2. tř.: do 100 bez přechodu i přes desítku, násobilka a dělení 2, 3, 4, 5, 10, hodiny
+  - 3. tř.: celá násobilka, dělení v násobilce, **dělení se zbytkem**, do 1000, zaokrouhlování, násobení zpaměti, jednotky
+  - 4. tř.: písemné násobení a dělení, čísla do milionu, zlomky, přednost operací a závorky, obvod, slovní úlohy
+  - 5. tř.: dělení dvojciferným číslem, desetinná čísla, ×/÷ 10, 100, 1000, sčítání zlomků, obsah, záporná čísla, římské číslice, převody jednotek, velká čísla, složitější slovní úlohy
+- **Nejdřív se naučit**: každé téma začíná vysvětlením s příkladem a „Vyzkoušej si“.
+- **Lekce = 10 příkladů**. Nápověda 💡 vysvětlí postup, po první chybě nápověda, po druhé celé řešení krok za krokem a nový příklad stejného typu.
+- **Hvězdy**: 3 ★ za nejvýš 1 chybu, 2 ★ za nejvýš 3.
+- **Trénink dne**: 10 příkladů napříč učivem, častěji témata s méně hvězdami.
+- **Odměny**
+  - během lekce se odkrývá obrázek, po lekci se odemkne do **Puzzle** (9 a 12 dílků)
+  - k tomu si vybere **novou omalovánku** (koně, jednorožci, móda – šaty, kabelka, klobouk…) nebo **kartičku do sbírky** (zvířata a móda se zajímavostí, vzácné a legendární)
+  - omalovánky jdou vybarvit **podle příkladů**: barvy jsou výsledky, políčka příklady
+  - režim **Navrhni**: šaty, tričko, stáj – polepit nálepkami a vybarvit
