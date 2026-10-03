@@ -1,6 +1,6 @@
-# Marušina matika
+# Marušina škola
 
-Matika pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.github.io/marusina-matika/
+Matika a čeština pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.github.io/marusina-matika/
 
 ## Zadání (jak to funguje)
 
@@ -20,3 +20,11 @@ Matika pro 1.–5. třídu na telefon i tablet. Hrát: https://michalondracekbt.
   - k tomu si vybere **novou omalovánku** (koně, jednorožci, móda – šaty, kabelka, klobouk…) nebo **kartičku do sbírky** (zvířata a móda se zajímavostí, vzácné a legendární)
   - omalovánky jdou vybarvit **podle příkladů**: barvy jsou výsledky, políčka příklady
   - režim **Navrhni**: šaty, tričko, stáj – polepit nálepkami a vybarvit
+
+## Čeština (21 témat)
+
+- 1. tř.: velké a malé písmeno, slabiky, tečka / otazník / vykřičník
+- 2. tř.: tvrdé a měkké souhlásky, di ti ni × dy ty ny, ú/ů, párové souhlásky na konci slova, řazení podle abecedy, slova opačného významu
+- 3. tř.: vyjmenovaná slova B, L, M a P, S, V, Z, bě/bje a vě/vje, mě/mně ve slovech, slovní druhy
+- 4. tř.: vyjmenovaná slova ve větách (byl/bil, mýt/mít…), s/z, pády, vzory podstatných jmen
+- 5. tř.: koncovky podstatných jmen, shoda přísudku s podmětem, mě/mně ve větách

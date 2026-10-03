@@ -15,7 +15,7 @@
 [hidden]{display:none!important}
 img{max-width:100%}
 </style>
-<title>Marušina matika</title>
+<title>Marušina škola</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -514,6 +514,16 @@ table.col tr.res td{color:var(--tomato)}
 .st-log i{color:var(--muted);font-weight:600}
 .st-ask{font-size:clamp(20px,5.4vw,26px);font-weight:800}
 
+.mm-subj{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mm-subj button{min-height:58px;flex-direction:row;gap:8px;font-size:18px;font-weight:800}
+.mm-subj .ico{font-size:26px}
+.cz-q{display:inline-block;font-size:clamp(32px,9vw,48px);font-weight:800;line-height:1.3;margin-top:4px}
+.ls-q:has(.cz-q) .cz-q b{color:var(--tomato)}
+.gap{display:inline-block;min-width:.9em;border-bottom:4px solid var(--tomato);color:var(--tomato);text-align:center;margin:0 2px}
+.gap.ok{color:#2B8A5A;border-color:#2B8A5A}
+.ls-choice.long{font-size:18px;min-width:130px;height:64px}
+.ls-q .cz-q:not(:has(b)){letter-spacing:.5px}
+
 /* WIN */
 .overlay{position:absolute;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(32,48,71,.35)}
 .win-card{background:var(--card);border-radius:32px;padding:22px 20px 20px;width:min(360px,100%);text-align:center;box-shadow:0 8px 0 var(--shadow);animation:pop .35s cubic-bezier(.3,1.5,.6,1)}
@@ -551,10 +561,11 @@ table.col tr.res td{color:var(--tomato)}
         <span>Chceš matiku jako aplikaci? Ťukni na <span class="share"><svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg></span> a vyber <b>Přidat na plochu</b>.</span>
         <button class="x" id="installClose" aria-label="Zavřít">✕</button>
       </div>
-      <div class="hero-row"><h1>Marušina <span>matika</span></h1><div class="mascot" id="mascot" role="img" aria-label="Koník">🐴</div></div>
-      <p class="lead">Počítej, nauč se něco nového a sbírej odměny.</p>
+      <div class="hero-row"><h1>Marušina <span>škola</span></h1><div class="mascot" id="mascot" role="img" aria-label="Koník">🐴</div></div>
+      <p class="lead">Matika i čeština od 1. do 5. třídy. Nauč se, procvič a sbírej odměny.</p>
+      <div class="seg icons mm-subj" id="mmSubj"></div>
       <div class="mm-grade-row"><span>Třída</span><div class="mm-grades" id="mmGrades"></div></div>
-      <button class="mm-daily" id="mmDaily"><span class="ico">🎯</span><span><b>Trénink dne</b><small>10 příkladů napříč učivem</small></span></button>
+      <button class="mm-daily" id="mmDaily"><span class="ico">🎯</span><span><b>Trénink dne</b><small>10 úloh napříč učivem</small></span></button>
       <p class="mm-h">Témata</p>
       <div class="mm-topics" id="mmTopics"></div>
       <p class="mm-h">Odměny</p>
@@ -729,7 +740,7 @@ table.col tr.res td{color:var(--tomato)}
       <div class="dots" id="lsDots"></div>
     </div>
     <div class="ls-top"><div class="ls-pic"><canvas id="lsPic" width="240" height="240"></canvas><div class="ls-cover" id="lsCover"></div></div>
-      <div class="ls-info">Každý správný příklad odkryje kousek obrázku.<br><span id="lsTopic"></span></div></div>
+      <div class="ls-info">Každá správná odpověď odkryje kousek obrázku.<br><span id="lsTopic"></span></div></div>
     <div class="ls-q" id="lsQ"></div>
     <div class="ls-ans" id="lsAns"></div>
     <div class="ls-msg" id="lsMsg"></div>
@@ -3386,6 +3397,233 @@ const TOPICS = [
       if (t === 2) { const a = ri(3, 8), b = ri(2, 5), m = ri(2, 4); return { q: `Na šaty potřebuje švadlena ${a} m látky a na sukni ${b} m. Kolik metrů látky potřebuje na ${m} šaty a ${m} sukně?`, a: (a + b) * m, unit: 'm', hint: 'Spočítej jednu sadu a vynásob.', explain: `(${a} + ${b}) · ${m} = <b>${(a + b) * m} m</b>` }; }
       const v = ri(12, 25), h = ri(2, 4), p = ri(1, 3) * 15; return { q: `Kůň jde rychlostí ${v} km za hodinu. Kolik kilometrů ujde za ${h} h a ${p} min?`, a: v * h + v * p / 60, unit: 'km', hint: `${p} min je ${p === 15 ? 'čtvrt' : p === 30 ? 'půl' : 'tři čtvrtě'} hodiny.`, explain: `${v} · ${h} = ${v * h}, + ${v * p / 60} = <b>${fm(v * h + v * p / 60)} km</b>` }; } }
 ];
+/* ---------- ČEŠTINA: topics 1.–5. třída ---------- */
+const czShuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+// a word or sentence with one gap "_": the answer goes into the gap
+const czGap = (text, fill) => text.replace('_', fill == null ? '<span class="gap">_</span>' : `<span class="gap ok">${fill}</span>`);
+// generic topic from a bank of [text with _, correct, wrong(s), note]
+function czBank(bank, opts = {}) {
+  return function () {
+    const it = bank[Math.floor(Math.random() * bank.length)];
+    const [text, ok, wrong, note] = it, wrongs = Array.isArray(wrong) ? wrong : [wrong];
+    const choices = opts.order ? opts.order.filter(c => c === ok || wrongs.includes(c)) : czShuffle([ok, ...wrongs]);
+    return { key: text, q: `<span class="cz-q">${czGap(text)}</span>`, a: ok, choices, filled: czGap(text, ok).replace(/<[^>]+>/g, ''),
+      hint: typeof opts.hint === 'function' ? opts.hint(it) : opts.hint, explain: `<span class="cz-q">${czGap(text, ok)}</span><br>${note || opts.note || ''}` };
+  };
+}
+const CZ_VELKA = [
+  ['_ája má nové kolo.', 'Á', 'á', 'Začátek věty a zároveň jméno.'], ['Náš pes se jmenuje _ex.', 'R', 'r', 'Jména zvířat píšeme s velkým písmenem.'],
+  ['Bydlíme v _rně.', 'B', 'b', 'Brno je název města.'], ['Na stole leží _ablko.', 'j', 'J', 'Jablko je obyčejné slovo uprostřed věty.'],
+  ['Teta _ana nám upekla dort.', 'J', 'j', 'Jana je jméno.'], ['Lodě plují po řece _abi.', 'L', 'l', 'Labe je název řeky.'],
+  ['_dyž prší, beru si deštník.', 'K', 'k', 'Na začátku věty je vždycky velké písmeno.'], ['Kočka _icka spí na gauči.', 'M', 'm', 'Micka je jméno kočky.'],
+  ['Ve škole máme novou _abuli.', 't', 'T', 'Tabule je obyčejné slovo.'], ['Pojedeme na hory do _rkonoš.', 'K', 'k', 'Krkonoše jsou název hor.'],
+  ['Můj bratr se jmenuje _avel.', 'P', 'p', 'Pavel je jméno.'], ['Na louce roste _opřiva.', 'k', 'K', 'Kopřiva je obyčejné slovo.'],
+  ['Hlavní město Česka je _raha.', 'P', 'p', 'Praha je název města.'], ['Kůň _lesk běží nejrychleji.', 'B', 'b', 'Blesk je tady jméno koně.'],
+  ['V létě pojedeme k _oři.', 'm', 'M', 'Moře je obyčejné slovo.'], ['_aše paní učitelka je hodná.', 'N', 'n', 'Začátek věty.'],
+  ['Sousedé mají psa _íka.', 'F', 'f', 'Fík je jméno psa.'], ['Babička peče _uchty.', 'b', 'B', 'Buchty jsou obyčejné slovo.'],
+  ['Narodila jsem se v _lomouci.', 'O', 'o', 'Olomouc je název města.'], ['O _ánocích zdobíme stromeček.', 'V', 'v', 'Vánoce píšeme s velkým V.'],
+  ['Kamarádka _va má narozeniny.', 'E', 'e', 'Eva je jméno.'], ['Ráno snídám _ohlík s máslem.', 'r', 'R', 'Rohlík je obyčejné slovo.'],
+  ['Na zahradě skáče _ajíček.', 'z', 'Z', 'Zajíček je obyčejné slovo.'], ['Dědeček jezdí na chatu k _ázavě.', 'S', 's', 'Sázava je název řeky.']
+];
+const CZ_SLABIKY = [['pes', 1], ['les', 1], ['dům', 1], ['strom', 1], ['vlak', 1], ['kočka', 2], ['máma', 2], ['ryba', 2], ['auto', 2], ['jablko', 2], ['stolek', 2], ['koník', 2],
+  ['beruška', 3], ['kolotoč', 3], ['papoušek', 3], ['jahoda', 3], ['maminka', 3], ['zmrzlina', 3], ['pastelka', 3], ['motýlek', 3],
+  ['krokodýl', 3], ['čokoláda', 4], ['televize', 4], ['kamarádka', 4], ['abeceda', 4], ['princezna', 3], ['banány', 3], ['housenka', 3]];
+const CZ_VETY = [
+  ['Kolik je hodin_', '?', 'Ptáme se → otazník.'], ['Zavři prosím okno_', '!', 'Rozkaz nebo prosba → vykřičník.'], ['Venku prší_', '.', 'Něco oznamujeme → tečka.'],
+  ['Kde bydlíš_', '?', 'Otázka → otazník.'], ['Máme nového psa_', '.', 'Oznamovací věta → tečka.'], ['Pojď sem_', '!', 'Rozkaz → vykřičník.'],
+  ['Jak se jmenuješ_', '?', 'Otázka → otazník.'], ['Dnes je pondělí_', '.', 'Oznamovací věta → tečka.'], ['Pozor, jede auto_', '!', 'Varování → vykřičník.'],
+  ['Kdy pojedeme k babičce_', '?', 'Otázka → otazník.'], ['Na stole je dort_', '.', 'Oznamovací věta → tečka.'], ['Ať se ti daří_', '!', 'Přání → vykřičník.'],
+  ['Proč je nebe modré_', '?', 'Otázka → otazník.'], ['Kočka spí na okně_', '.', 'Oznamovací věta → tečka.'], ['Utíkej rychle domů_', '!', 'Rozkaz → vykřičník.'],
+  ['Máš rád jahody_', '?', 'Otázka → otazník.'], ['Ráno svítilo slunce_', '.', 'Oznamovací věta → tečka.'], ['Hurá, jsou prázdniny_', '!', 'Radostné zvolání → vykřičník.']
+];
+const HM_NOTE = 'Po <b>tvrdých</b> souhláskách (h, ch, k, r, d, t, n) píšeme <b>y</b>, po <b>měkkých</b> (ž, š, č, ř, c, j, ď, ť, ň) píšeme <b>i</b>.';
+const CZ_HM = [
+  ['ch_ba', 'y', 'i'], ['r_ba', 'y', 'i'], ['t_gr', 'y', 'i'], ['r_chle', 'y', 'i'], ['ch_trý', 'y', 'i'], ['k_selý', 'y', 'i'], ['h_ena', 'y', 'i'],
+  ['d_ně', 'ý', 'í'], ['k_chat', 'ý', 'í'], ['t_č', 'y', 'i'], ['ch_tat', 'y', 'i'], ['kr_t', 'ý', 'í'], ['h_bat se', 'ý', 'í'], ['t_kev', 'y', 'i'],
+  ['ž_dle', 'i', 'y'], ['š_pka', 'i', 'y'], ['č_slo', 'í', 'ý'], ['ř_dit', 'í', 'ý'], ['c_bule', 'i', 'y'], ['j_skra', 'i', 'y'], ['ž_rafa', 'i', 'y'],
+  ['č_st', 'í', 'ý'], ['c_tron', 'i', 'y'], ['ř_zek', 'í', 'ý'], ['j_dlo', 'í', 'ý'], ['ž_vot', 'i', 'y'], ['š_ška', 'i', 'y'], ['c_hla', 'i', 'y'], ['ř_jen', 'í', 'ý']
+];
+const DTN_NOTE = 'Když slyšíš měkce <b>ďi, ťi, ňi</b>, píšeš <b>di, ti, ni</b>. Když slyšíš tvrdě <b>dy, ty, ny</b>, píšeš <b>y</b>.';
+const CZ_DTN = [
+  ['d_vadlo', 'i', 'y'], ['t_cho', 'i', 'y'], ['n_t', 'i', 'y'], ['d_ně', 'ý', 'í'], ['t_gr', 'y', 'i'], ['n_ní', 'y', 'i'], ['d_vka', 'í', 'ý'],
+  ['n_kdo', 'i', 'y'], ['t_kev', 'y', 'i'], ['d_chat', 'ý', 'í'], ['t_sk', 'i', 'y'], ['n_kdy', 'i', 'y'], ['d_rka', 'í', 'ý'], ['t_č', 'y', 'i'],
+  ['n_tka', 'i', 'y'], ['d_ky', 'í', 'ý'], ['t_ká', 'i', 'y'], ['d_vočák', 'i', 'y']
+];
+const UU_NOTE = '<b>Ú</b> píšeme na začátku slova (a po předponě), <b>ů</b> uprostřed a na konci slova. Výjimky: túra, skútr, ocún…';
+const CZ_UU = [
+  ['_kol', 'ú', 'ů'], ['d_m', 'ů', 'ú'], ['st_l', 'ů', 'ú'], ['_terý', 'ú', 'ů'], ['r_že', 'ů', 'ú'], ['k_ň', 'ů', 'ú'], ['_l', 'ú', 'ů', 'Úl – ú je na začátku slova.'],
+  ['dom_', 'ů', 'ú'], ['_směv', 'ú', 'ů'], ['p_l', 'ů', 'ú'], ['_hel', 'ú', 'ů'], ['pr_vod', 'ů', 'ú'], ['v_z', 'ů', 'ú'], ['_nava', 'ú', 'ů'],
+  ['s_l', 'ů', 'ú'], ['_zký', 'ú', 'ů'], ['b_h', 'ů', 'ú'], ['t_ra', 'ú', 'ů', 'Túra je výjimka – ú uprostřed slova.'], ['sk_tr', 'ú', 'ů', 'Skútr je výjimka.'],
+  ['ne_spěch', 'ú', 'ů', 'Po předponě ne- zůstává ú (úspěch → neúspěch).'], ['kr_ček', 'ů', 'ú']
+];
+const CZ_PAR = [
+  ['du_', 'b', 'p', 'Ověř: duby → b.'], ['zu_', 'b', 'p', 'Ověř: zuby → b.'], ['hra_', 'd', 't', 'Ověř: hrady → d.'], ['Na rybníku je tenký le_.', 'd', 't', 'Ověř: ledu → d.'],
+  ['mrá_', 'z', 's', 'Ověř: mrazy → z.'], ['nů_', 'ž', 'š', 'Ověř: nože → ž.'], ['plo_', 't', 'd', 'Ověř: ploty → t.'], ['chlé_', 'b', 'p', 'Ověř: chleba → b.'],
+  ['ha_', 'd', 't', 'Ověř: hadi → d.'], ['sně_', 'h', 'ch', 'Ověř: sněhu → h.'], ['V ZOO řve le_.', 'v', 'f', 'Ověř: lvi → v.'], ['obra_', 'z', 's', 'Ověř: obrazy → z.'],
+  ['vů_', 'z', 's', 'Ověř: vozy → z.'], ['Za vsí roste hustý le_.', 's', 'z', 'Ověř: lesy → s.'], ['tvaro_', 'h', 'ch', 'Ověř: tvarohu → h.'], ['ro_', 'h', 'ch', 'Ověř: rohy → h.'],
+  ['hrá_', 'ch', 'h', 'Ověř: hrachu → ch.'], ['stro_', 'p', 'b', 'Ověř: stropy → p.'], ['kru_', 'h', 'ch', 'Ověř: kruhy → h.'], ['čá_', 'p', 'b', 'Ověř: čápi → p.'],
+  ['holu_', 'b', 'p', 'Ověř: holubi → b.'], ['mlá_', 'ď', 'ť', 'Ověř: mládě → ď.'], ['pta_', 'k', 'g', 'Ověř: ptáci → k.'], ['kre_', 'v', 'f', 'Ověř: krve → v.']
+];
+const CZ_WORDS = ['auto', 'banán', 'citron', 'čepice', 'dům', 'ďábel', 'eskymák', 'fazole', 'guma', 'hrad', 'chleba', 'iglú', 'jablko', 'koník', 'lampa', 'motýl', 'nos',
+  'okno', 'pes', 'rak', 'řeka', 'slon', 'šála', 'tráva', 'ucho', 'vlak', 'zebra', 'žába', 'hora', 'chata', 'cibule', 'čaj', 'sova', 'šiška', 'ryba', 'řepa', 'zámek', 'želva', 'kočka', 'kniha'];
+const CZ_OPAK = [['velký', 'malý'], ['vysoký', 'nízký'], ['den', 'noc'], ['teplý', 'studený'], ['rychlý', 'pomalý'], ['starý', 'mladý'], ['nahoře', 'dole'], ['světlo', 'tma'],
+  ['smát se', 'plakat'], ['otevřít', 'zavřít'], ['plný', 'prázdný'], ['těžký', 'lehký'], ['tvrdý', 'měkký'], ['začátek', 'konec'], ['dobrý', 'zlý'], ['blízko', 'daleko'],
+  ['dlouhý', 'krátký'], ['široký', 'úzký'], ['veselý', 'smutný'], ['přijít', 'odejít'], ['léto', 'zima'], ['vpředu', 'vzadu'], ['čistý', 'špinavý'], ['silný', 'slabý']];
+const VY_NOTE = it => it[1].match(/[yý]/) ? 'Je to <b>vyjmenované slovo</b> nebo slovo příbuzné → <b>y</b>.' : 'Není to vyjmenované slovo → <b>i</b>.';
+const CZ_VYJM1 = [
+  ['b_dlit', 'y', 'i'], ['ob_vatel', 'y', 'i'], ['b_strý', 'y', 'i'], ['b_lina', 'y', 'i'], ['kob_la', 'y', 'i'], ['b_k', 'ý', 'í'],
+  ['b_lý', 'í', 'ý'], ['b_tva', 'i', 'y'], ['b_cykl', 'i', 'y'],
+  ['sl_šet', 'y', 'i'], ['ml_n', 'ý', 'í'], ['pl_nout', 'y', 'i'], ['l_že', 'y', 'i'], ['l_tko', 'ý', 'í'], ['pol_kat', 'y', 'i'], ['l_sý', 'y', 'i'], ['pl_š', 'y', 'i'], ['bl_skat se', 'ý', 'í'],
+  ['l_pa', 'í', 'ý'], ['l_stí', 'i', 'y'], ['l_mon', 'i', 'y'], ['l_ška', 'i', 'y'], ['l_dé', 'i', 'y'],
+  ['m_š', 'y', 'i'], ['hm_z', 'y', 'i'], ['zam_kat', 'y', 'i'], ['m_slet', 'y', 'i'], ['hlem_žď', 'ý', 'í'], ['chm_ří', 'ý', 'í'],
+  ['m_sto', 'í', 'ý'], ['m_lý', 'i', 'y'], ['m_nuta', 'i', 'y'], ['m_č', 'í', 'ý'], ['m_ska', 'i', 'y']
+];
+const CZ_VYJM2 = [
+  ['p_tel', 'y', 'i'], ['netop_r', 'ý', 'í'], ['kop_to', 'y', 'i'], ['p_cha', 'ý', 'í'], ['třp_tit se', 'y', 'i'], ['slep_š', 'ý', 'í'], ['klop_tat', 'ý', 'í'],
+  ['p_sek', 'í', 'ý'], ['p_smeno', 'í', 'ý'], ['p_la', 'i', 'y'], ['p_škot', 'í', 'ý'],
+  ['s_n', 'y', 'i'], ['s_kora', 'ý', 'í'], ['s_sel', 'y', 'i'], ['s_pat', 'y', 'i'], ['s_čet', 'y', 'i'], ['s_chravý', 'y', 'i'], ['us_chat', 'y', 'i'], ['s_tý', 'y', 'i'],
+  ['s_la', 'í', 'ý'], ['s_rotek', 'i', 'y'], ['s_lnice', 'i', 'y'], ['s_to', 'í', 'ý'],
+  ['v_soký', 'y', 'i'], ['v_dra', 'y', 'i'], ['žv_kat', 'ý', 'í'], ['zv_k', 'y', 'i'], ['pov_k', 'y', 'i'],
+  ['v_dět', 'i', 'y'], ['v_tr', 'í', 'ý'], ['v_la', 'í', 'ý'], ['v_dlička', 'i', 'y'], ['v_ce', 'í', 'ý'],
+  ['brz_', 'y', 'i'], ['jaz_k', 'y', 'i'], ['naz_vat', 'ý', 'í'], ['z_ma', 'i', 'y'], ['z_tra', 'í', 'ý'], ['z_skat', 'í', 'ý']
+];
+const CZ_BE = [
+  ['ob_d', 'ě', 'je', 'Oběd – nic se nespojuje, píšeme ě.'], ['ob_m', 'je', 'ě', 'Ob + jem → objem.'], ['ob_vit', 'je', 'ě', 'Ob + jevit → objevit.'],
+  ['v_zd', 'je', 'ě', 'V + jezd → vjezd.'], ['p_t', 'ě', 'je', 'Pět – píšeme pě.'], ['b_hat', 'ě', 'je', 'Běhat – píšeme bě.'], ['ob_ť', 'ě', 'je', 'Oběť – píšeme bě.'],
+  ['v_c', 'ě', 'je', 'Věc – píšeme vě.'], ['ob_dnat', 'je', 'ě', 'Ob + jednat → objednat.'], ['v_tev', 'ě', 'je', 'Větev – píšeme vě.'], ['ob_zd', 'je', 'ě', 'Ob + jezd → objezd.'],
+  ['v_řit', 'ě', 'je', 'Věřit – píšeme vě.'], ['ob_tí', 'ě', 'je', 'Obětí – píšeme bě.'], ['p_na', 'ě', 'je', 'Pěna – píšeme pě.'], ['ob_vení', 'je', 'ě', 'Ob + jevení → objevení.'], ['v_dro', 'ě', 'je', 'Vědro – píšeme vě.']
+];
+const CZ_MEW = [
+  ['_sto', 'mě', 'mně', 'Město – slovo se slabikou mě.'], ['zapo_la', 'mně', 'mě', 'Zapomenout → zapomněla (n zůstává).'], ['_síc', 'mě', 'mně', 'Měsíc – mě.'],
+  ['vzpo_l', 'mně', 'mě', 'Vzpomenout → vzpomněl (n zůstává).'], ['pa_ť', 'mě', 'mně', 'Paměť – mě.'], ['rozu_', 'mně', 'mě', 'Rozumný → rozumně (mn zůstává).'],
+  ['_kký', 'mě', 'mně', 'Měkký – mě.'], ['_řit', 'mě', 'mně', 'Měřit – mě.'], ['tem_', 'mně', 'mě', 'Temný → temně (mn zůstává).'], ['_na', 'mě', 'mně', 'Měna – mě.'], ['_ď', 'mě', 'mně', 'Měď – mě.'], ['skrom_', 'mně', 'mě', 'Skromný → skromně (mn zůstává).'], ['_lký', 'mě', 'mně', 'Mělký – mě.']
+];
+const CZ_MEP = [
+  ['Dej _ tu knížku.', 'mně', 'mě', 'Dej komu? → mně (3. pád).'], ['Pozvi _ na oslavu.', 'mě', 'mně', 'Pozvi koho? → mě (4. pád).'], ['Mluvili o _.', 'mně', 'mě', 'O kom? → mně (6. pád).'],
+  ['Bez _ nikam nechoď.', 'mě', 'mně', 'Bez koho? → mě (2. pád).'], ['Je _ zima.', 'mně', 'mě', 'Komu je zima? → mně.'], ['Vidíš _?', 'mě', 'mně', 'Vidíš koho? → mě.'],
+  ['Podej _ ruku.', 'mně', 'mě', 'Podej komu? → mně.'], ['Počkej na _.', 'mě', 'mně', 'Na koho? → mě (4. pád).'], ['Ke _ přijde babička.', 'mně', 'mě', 'Ke komu? → mně.'],
+  ['Ten dárek je pro _.', 'mě', 'mně', 'Pro koho? → mě (4. pád).'], ['Napiš _ dopis.', 'mně', 'mě', 'Napiš komu? → mně.'], ['Bolí _ hlava.', 'mě', 'mně', 'Bolí koho? → mě.'],
+  ['Líbí se _ to.', 'mně', 'mě', 'Líbí se komu? → mně.'], ['Řekni _ pravdu.', 'mně', 'mě', 'Řekni komu? → mně.'], ['U _ doma je teplo.', 'mě', 'mně', 'U koho? → mě (2. pád).'],
+  ['Pošli _ fotku.', 'mně', 'mě', 'Pošli komu? → mně.'], ['Hledali _ všude.', 'mě', 'mně', 'Hledali koho? → mě.'], ['Při _ seděla kamarádka.', 'mně', 'mě', 'Při kom? → mně (6. pád).']
+];
+const CZ_DRUHY_L = ['podstatné jméno', 'přídavné jméno', 'sloveso', 'číslovka'];
+const CZ_DRUHY = [['pes', 0], ['stůl', 0], ['kočka', 0], ['škola', 0], ['kniha', 0], ['jablko', 0], ['krásný', 1], ['zelený', 1], ['rychlý', 1], ['veselá', 1], ['malé', 1], ['chytrý', 1],
+  ['běhat', 2], ['psát', 2], ['zpívá', 2], ['čte', 2], ['skáče', 2], ['spí', 2], ['pět', 3], ['sto', 3], ['tři', 3], ['deset', 3], ['druhý', 3], ['dvakrát', 3]];
+const VYJMV = [
+  ['Včera jsem b_l nemocný.', 'y', 'i', 'Byl – od slovesa být (existovat) → y.'], ['Kovář b_l kladivem do železa.', 'i', 'y', 'Bil – od slovesa bít (tlouct) → i.'],
+  ['Před jídlem si musíme m_t ruce.', 'ý', 'í', 'Mýt = umývat → vyjmenované slovo → ý.'], ['Chtěla bych m_t koně.', 'í', 'ý', 'Mít = vlastnit → í.'],
+  ['V lese houká v_r.', 'ý', 'í', 'Výr je sova → vyjmenované slovo.'], ['Voda v řece tvořila v_r.', 'í', 'ý', 'Vír = točící se voda → í.'],
+  ['Pes v_je na měsíc.', 'y', 'i', 'Výt → vyje → y.'], ['Bydlíme v novém b_tě.', 'y', 'i', 'Byt (kde bydlíme) → y.'], ['Nesmíš psa b_t.', 'í', 'ý', 'Bít = tlouct → í.'],
+  ['Včelka sbírá p_l.', 'y', 'i', 'Pyl z květů → vyjmenované slovo.'], ['Děda p_l horký čaj.', 'i', 'y', 'Pil – od slovesa pít → i.'], ['Babička s_pe mouku do mísy.', 'y', 'i', 'Sypat → sype → y.'],
+  ['Had potichu s_čí.', 'y', 'i', 'Syčet → syčí → y.'], ['Kluk se v příkladu zm_lil.', 'ý', 'í', 'Mýlit se → zmýlil → ý.'], ['Ten pán je moc m_lý.', 'i', 'y', 'Milý (hodný) není vyjmenované → i.'],
+  ['Mlynář mele mouku ve ml_ně.', 'ý', 'í', 'Mlýn → mlýně → ý.'], ['Na stromě sedí s_kora.', 'ý', 'í', 'Sýkora → vyjmenované slovo.'], ['Na hory jedeme brz_ ráno.', 'y', 'i', 'Brzy → vyjmenované slovo po z.']
+];
+const SZ_NOTE = '<b>s-</b> = dohromady nebo dolů z povrchu (sjet, sbírat). <b>z-</b> = změna stavu (zčervenat, zmrznout). Předložka <b>s</b> = s kým, s čím; <b>z</b> = z čeho, odkud.';
+const CZ_SZ = [
+  ['_jet z kopce', 's', 'z', 'Dolů z povrchu → s.'], ['_červenat', 'z', 's', 'Změna barvy → z.'], ['_letět ze stromu dolů', 's', 'z', 'Dolů → s.'], ['_mrznout', 'z', 's', 'Změna stavu → z.'],
+  ['_vázat do kytice', 's', 'z', 'Dohromady → s.'], ['_bírat houby', 's', 'z', 'Dohromady → s.'], ['_hasnout světlo', 'z', 's', 'Změna stavu → z.'], ['_padnout z kola', 's', 'z', 'Dolů → s.'],
+  ['_bělet', 'z', 's', 'Změna barvy → z.'], ['_lepit dva papíry', 's', 'z', 'Dohromady → s.'], ['_tichnout', 'z', 's', 'Změna stavu → z.'], ['_hromáždit se', 's', 'z', 'Dohromady → s.'],
+  ['Jdu do kina _ maminkou.', 's', 'z', 'S kým? → s.'], ['Vrátil se _ práce.', 'z', 's', 'Odkud? → z.'], ['Spadl _ koně.', 'z', 's', 'Z čeho? → z.'], ['Chléb _ máslem', 's', 'z', 'S čím? → s.'],
+  ['Hrnek _ porcelánu', 'z', 's', 'Z čeho? → z.'], ['Utekl _ domu.', 'z', 's', 'Odkud? → z.'], ['Byla jsem tam _ tátou.', 's', 'z', 'S kým? → s.'], ['Šaty _ hedvábí', 'z', 's', 'Z čeho? → z.']
+];
+const PAD_Q = ['', 'kdo? co?', 'koho? čeho?', 'komu? čemu?', 'koho? co?', 'oslovujeme, voláme', 'o kom? o čem?', 's kým? s čím?'];
+const CZ_PADY = [['Vidím <b>psa</b>.', 4], ['Jdu k <b>babičce</b>.', 3], ['Bez <b>čepice</b> je zima.', 2], ['Mluvíme o <b>škole</b>.', 6], ['Píšu <b>tužkou</b>.', 7],
+  ['<b>Kočka</b> spí.', 1], ['Pane <b>učiteli</b>, mám dotaz.', 5], ['Bojím se <b>tmy</b>.', 2], ['Přeji <b>mamince</b> k svátku.', 3], ['Jedu s <b>tátou</b>.', 7],
+  ['Čtu <b>knihu</b>.', 4], ['Bydlím v <b>Praze</b>.', 6], ['<b>Babičko</b>, pojď sem!', 5], ['Dám to <b>Petrovi</b>.', 3], ['Na stole leží <b>jablko</b>.', 1],
+  ['Těším se na <b>prázdniny</b>.', 4], ['Sedím vedle <b>kamarádky</b>.', 2], ['Hraju si s <b>míčem</b>.', 7], ['Přemýšlím o <b>koni</b>.', 6], ['Pomáhám <b>sestře</b>.', 3]];
+const CZ_VZORY = { m: ['pán', 'hrad', 'muž', 'stroj', 'předseda', 'soudce'], f: ['žena', 'růže', 'píseň', 'kost'], n: ['město', 'moře', 'kuře', 'stavení'] };
+const CZ_VZ = [['kluk', 'pán', 'm'], ['soused', 'pán', 'm'], ['strom', 'hrad', 'm'], ['stůl', 'hrad', 'm'], ['lékař', 'muž', 'm'], ['malíř', 'muž', 'm'], ['míč', 'stroj', 'm'], ['nůž', 'stroj', 'm'],
+  ['táta', 'předseda', 'm'], ['děda', 'předseda', 'm'], ['průvodce', 'soudce', 'm'], ['vůdce', 'soudce', 'm'], ['kniha', 'žena', 'f'], ['škola', 'žena', 'f'], ['ulice', 'růže', 'f'],
+  ['židle', 'růže', 'f'], ['báseň', 'píseň', 'f'], ['dlaň', 'píseň', 'f'], ['radost', 'kost', 'f'], ['noc', 'kost', 'f'], ['okno', 'město', 'n'], ['jablko', 'město', 'n'],
+  ['hřiště', 'moře', 'n'], ['pole', 'moře', 'n'], ['kotě', 'kuře', 'n'], ['štěně', 'kuře', 'n'], ['náměstí', 'stavení', 'n'], ['psaní', 'stavení', 'n']];
+const KONC_NOTE = it => it[1] === 'i' ? 'Rod mužský <b>životný</b> (ptáme se kdo?) – vzor pán → <b>i</b>.' : 'Rod mužský <b>neživotný</b> (ptáme se co?) – vzor hrad → <b>y</b>.';
+const CZ_KONC = [['Na hřišti běhají kluc_.', 'i', 'y'], ['V lese rostou strom_.', 'y', 'i'], ['Na dvoře štěkají ps_.', 'i', 'y'], ['Na nádraží stojí vlak_.', 'y', 'i'],
+  ['Na střeše sedí ptác_.', 'i', 'y'], ['Za vsí jsou dva rybník_.', 'y', 'i'], ['V ZOO jsou tygř_.', 'i', 'y'], ['Ve městě jsou vysoké dom_.', 'y', 'i'], ['Na poli pracují chlapc_.', 'i', 'y'],
+  ['Na nebi plují mrak_.', 'y', 'i'], ['Na náměstí létají holub_.', 'i', 'y'], ['V kuchyni stojí stol_.', 'y', 'i'], ['Na výlet jedou kamarád_.', 'i', 'y'], ['Na zdi visí obrázk_.', 'y', 'i'],
+  ['V cirkuse vystupují slon_.', 'i', 'y'], ['Mléčné zub_ vypadávají.', 'y', 'i'], ['Na louce brodí čáp_.', 'i', 'y'], ['Na poličce stojí hrnk_.', 'y', 'i']];
+const SHODA_NOTE = 'Rod mužský <b>životný</b> → <b>i</b> (kluci běhali). Mužský neživotný a ženský → <b>y</b> (vlaky jely, holky zpívaly). Střední → <b>a</b> (auta jela).';
+const CZ_SHODA = [['Kluci hrál_ fotbal.', 'i'], ['Holky zpíval_ písničky.', 'y'], ['Vlaky jel_ rychle.', 'y'], ['Psi štěkal_ na pošťáka.', 'i'], ['Kočky mňoukal_.', 'y'],
+  ['Stromy kvetl_.', 'y'], ['Ptáci zpíval_.', 'i'], ['Děti si hrál_ na písku.', 'y'], ['Koně běžel_ po louce.', 'i'], ['Auta jel_ po dálnici.', 'a'], ['Kuřata pípal_.', 'a'],
+  ['Ovce se pásl_.', 'y'], ['Rodiče přišl_ domů.', 'i'], ['Hvězdy svítil_.', 'y'], ['Draci létal_ vysoko.', 'i'], ['Lodě plul_ po moři.', 'y'], ['Jablka padal_ ze stromu.', 'a'],
+  ['Maminky pekl_ koláče.', 'y'], ['Kamarádi přijel_ na kole.', 'i'], ['Kola stál_ před školou.', 'a'], ['Sloni pil_ vodu.', 'i'], ['Hrady stál_ na kopcích.', 'y']];
+
+TOPICS.push(
+  // ---------- 1. třída ----------
+  { subj: 'cj', id: 'c1-velka', grade: 1, ico: '🔠', name: 'Velké a malé písmeno',
+    learn: '<p>S <b>velkým písmenem</b> píšeme: začátek věty, jména lidí a zvířat (Ema, Rex) a názvy měst, řek a hor (Brno, Vltava, Krkonoše).</p><p>Ostatní slova uprostřed věty píšeme malým písmenem.</p>',
+    gen: czBank(CZ_VELKA, { hint: 'Je to začátek věty, jméno nebo název?' }) },
+  { subj: 'cj', id: 'c1-slab', grade: 1, ico: '👏', name: 'Slabiky',
+    learn: '<p>Slovo rozdělíme na <b>slabiky</b>, když ho vytleskáme: <b>ko-čka</b> má 2 slabiky, <b>be-ruš-ka</b> 3.</p><p>Každá slabika má samohlásku (a, e, i, o, u…).</p>',
+    gen() { const [w, n] = CZ_SLABIKY[Math.floor(Math.random() * CZ_SLABIKY.length)]; return { key: w, q: `Kolik slabik má toto slovo?<br><span class="cz-q">${w}</span>`, a: String(n), choices: ['1', '2', '3', '4'], hint: 'Vytleskej si to slovo.', explain: `${w} má <b>${n}</b> ${n === 1 ? 'slabiku' : n < 5 ? 'slabiky' : 'slabik'}.` }; } },
+  { subj: 'cj', id: 'c1-vety', grade: 1, ico: '❗', name: 'Tečka, otazník, vykřičník',
+    learn: '<p><b>Tečka</b> – něco oznamujeme: Venku prší.</p><p><b>Otazník</b> – ptáme se: Kde bydlíš?</p><p><b>Vykřičník</b> – rozkaz, prosba, přání nebo zvolání: Pojď sem!</p>',
+    gen() { const [t, ok, note] = CZ_VETY[Math.floor(Math.random() * CZ_VETY.length)]; return { key: t, q: `<span class="cz-q">${czGap(t)}</span>`, a: ok, choices: ['.', '?', '!'], filled: t.replace('_', ok), hint: 'Ptá se, přikazuje, nebo jen oznamuje?', explain: `${t.replace('_', ok)}<br>${note}` }; } },
+  // ---------- 2. třída ----------
+  { subj: 'cj', id: 'c2-hm', grade: 2, ico: '🪨', name: 'Tvrdé a měkké souhlásky',
+    learn: `<p>${HM_NOTE}</p><p>Tvrdé si pamatuj: <b>h, ch, k, r, d, t, n</b>. Měkké: <b>ž, š, č, ř, c, j, ď, ť, ň</b>.</p>`,
+    gen: czBank(CZ_HM, { hint: 'Je souhláska před mezerou tvrdá, nebo měkká?', note: HM_NOTE }) },
+  { subj: 'cj', id: 'c2-dtn', grade: 2, ico: '👂', name: 'di, ti, ni × dy, ty, ny',
+    learn: `<p>${DTN_NOTE}</p><p>Divadlo, ticho, nit – slyšíš měkce. Dýně, tygr, nyní – slyšíš tvrdě.</p>`,
+    gen: czBank(CZ_DTN, { hint: 'Řekni slovo nahlas. Slyšíš ďi/ťi/ňi, nebo dy/ty/ny?', note: DTN_NOTE }) },
+  { subj: 'cj', id: 'c2-uu', grade: 2, ico: '⭕', name: 'ú, nebo ů',
+    learn: `<p>${UU_NOTE}</p><p>Úkol, úterý × dům, stůl, domů.</p>`,
+    gen: czBank(CZ_UU, { hint: 'Je to na začátku slova, nebo uprostřed či na konci?', note: UU_NOTE }) },
+  { subj: 'cj', id: 'c2-par', grade: 2, ico: '🔁', name: 'Párové souhlásky na konci',
+    learn: '<p>Na konci slova často slyšíme jinou hlásku, než píšeme: dub zní jako „dup“.</p><p><b>Ověř si to</b> jiným tvarem slova: dub → du<b>b</b>y, hrad → hra<b>d</b>y, nůž → no<b>ž</b>e.</p>',
+    gen: czBank(CZ_PAR, { hint: 'Řekni slovo v množném čísle (dva…) – co uslyšíš?' }) },
+  { subj: 'cj', id: 'c2-abc', grade: 2, ico: '🔤', name: 'Řazení podle abecedy',
+    learn: '<p>Slova řadíme podle <b>prvního písmene</b>. Když je stejné, rozhoduje druhé písmeno.</p><p>Pozor: <b>ch</b> je v abecedě až <b>za h</b> (hrad, chata).</p>',
+    gen() { const ws = czShuffle(CZ_WORDS).slice(0, 3), first = ws.slice().sort((a, b) => a.localeCompare(b, 'cs'))[0];
+      return { key: ws.join(), q: 'Které slovo bude v abecedě <b>první</b>?', a: first, choices: ws, hint: 'Porovnej první písmena. Ch je až za h.', explain: `Seřazeno: ${ws.slice().sort((a, b) => a.localeCompare(b, 'cs')).join(', ')}` }; } },
+  { subj: 'cj', id: 'c2-opak', grade: 2, ico: '↔️', name: 'Slova opačného významu',
+    learn: '<p>Slova <b>opačného významu</b> znamenají pravý opak: velký × malý, den × noc, otevřít × zavřít.</p>',
+    gen() { const p = CZ_OPAK[Math.floor(Math.random() * CZ_OPAK.length)], flip = Math.random() < .5, [w, ok] = flip ? [p[1], p[0]] : p;
+      const others = czShuffle(CZ_OPAK.filter(x => x !== p)).slice(0, 2).map(x => x[Math.random() < .5 ? 0 : 1]);
+      return { key: w, q: `Co je opakem tohoto slova?<br><span class="cz-q">${w}</span>`, a: ok, choices: czShuffle([ok, ...others]), hint: 'Hledej pravý opak.', explain: `${w} × <b>${ok}</b>` }; } },
+  // ---------- 3. třída ----------
+  { subj: 'cj', id: 'c3-vyjm1', grade: 3, ico: '📜', name: 'Vyjmenovaná slova B, L, M',
+    learn: '<p><b>B:</b> být, bydlit, obyvatel, byt, příbytek, nábytek, dobytek, obyčej, bystrý, bylina, kobyla, býk, Přibyslav.</p><p><b>L:</b> slyšet, mlýn, blýskat se, polykat, plynout, plýtvat, vzlykat, lysý, lýtko, lýko, lyže, pelyněk, plyš.</p><p><b>M:</b> my, mýt, myslit, mýlit se, hmyz, myš, hlemýžď, mýtit, zamykat, smýkat, dmýchat, chmýří, nachomýtnout se, Litomyšl.</p><p>Ve vyjmenovaných slovech a slovech příbuzných píšeme <b>y</b>, jinak <b>i</b>.</p>',
+    gen: czBank(CZ_VYJM1, { hint: 'Je to vyjmenované slovo, nebo slovo příbuzné?', note: '' , }) },
+  { subj: 'cj', id: 'c3-vyjm2', grade: 3, ico: '📜', name: 'Vyjmenovaná slova P, S, V, Z',
+    learn: '<p><b>P:</b> pýcha, pytel, pysk, netopýr, slepýš, pyl, kopyto, klopýtat, třpytit se, zpytovat, pykat, pýr, pýřit se, čepýřit se.</p><p><b>S:</b> syn, sytý, sýr, syrový, sychravý, usychat, sýkora, sýček, sysel, syčet, sypat.</p><p><b>V:</b> vy, vysoký, výt, výskat, zvykat, žvýkat, vydra, výr, vyžle, povyk, výheň.</p><p><b>Z:</b> brzy, jazyk, nazývat se.</p>',
+    gen: czBank(CZ_VYJM2, { hint: 'Je to vyjmenované slovo, nebo slovo příbuzné?' }) },
+  { subj: 'cj', id: 'c3-be', grade: 3, ico: '🧩', name: 'bě/bje, vě/vje, pě',
+    learn: '<p>Většinou píšeme <b>bě, vě, pě</b>: oběd, věc, pět.</p><p><b>bje, vje</b> píšeme jen tam, kde se potká předpona <b>ob-, v-</b> se slovem na <b>j</b>: ob + jem = <b>objem</b>, v + jezd = <b>vjezd</b>.</p>',
+    gen: czBank(CZ_BE, { hint: 'Je tam předpona ob- nebo v- a za ní slovo začínající na j?' }) },
+  { subj: 'cj', id: 'c3-mew', grade: 3, ico: '🔍', name: 'mě, nebo mně ve slovech',
+    learn: '<p>Ve většině slov píšeme <b>mě</b>: město, měsíc, měkký, paměť.</p><p><b>mně</b> píšeme, když je ve slově <b>n</b> i v příbuzném slově: zapomenout → zapom<b>n</b>ěla, rozumný → rozum<b>n</b>ě.</p>',
+    gen: czBank(CZ_MEW, { hint: 'Je v příbuzném slově n (zapomenout, rozumný)?' }) },
+  { subj: 'cj', id: 'c3-druhy', grade: 3, ico: '🏷️', name: 'Slovní druhy',
+    learn: '<p><b>Podstatné jméno</b> – kdo? co? (pes, škola). <b>Přídavné jméno</b> – jaký? (zelený). <b>Sloveso</b> – co dělá? (běhá). <b>Číslovka</b> – kolik? kolikátý? (pět, druhý).</p>',
+    gen() { const [w, k] = CZ_DRUHY[Math.floor(Math.random() * CZ_DRUHY.length)]; return { key: w, q: `Jaký je to slovní druh?<br><span class="cz-q">${w}</span>`, a: CZ_DRUHY_L[k], choices: CZ_DRUHY_L, hint: 'Zeptej se: kdo/co? jaký? co dělá? kolik?', explain: `${w} – <b>${CZ_DRUHY_L[k]}</b>` }; } },
+  // ---------- 4. třída ----------
+  { subj: 'cj', id: 'c4-vyjmv', grade: 4, ico: '🎯', name: 'Vyjmenovaná slova ve větách',
+    learn: '<p>Některá slova znějí stejně, ale znamenají něco jiného: <b>byl</b> (být) × <b>bil</b> (bít), <b>mýt</b> (umývat) × <b>mít</b> (vlastnit), <b>výr</b> (sova) × <b>vír</b> (voda), <b>pyl</b> × <b>pil</b>.</p><p>Vždycky si řekni, co slovo ve větě <b>znamená</b>.</p>',
+    gen: czBank(VYJMV, { hint: 'Co to slovo ve větě znamená? Je to vyjmenované slovo?' }) },
+  { subj: 'cj', id: 'c4-sz', grade: 4, ico: '🛝', name: 's, nebo z',
+    learn: `<p>${SZ_NOTE}</p>`,
+    gen: czBank(CZ_SZ, { hint: 'Dolů nebo dohromady (s)? Změna (z)? S kým (s)? Odkud (z)?', note: SZ_NOTE }) },
+  { subj: 'cj', id: 'c4-pady', grade: 4, ico: '❔', name: 'Pády podstatných jmen',
+    learn: '<p>1. kdo? co? 2. koho? čeho? 3. komu? čemu? 4. koho? co? 5. oslovujeme 6. o kom? o čem? 7. s kým? s čím?</p><p>Na tučné slovo se zeptej pádovou otázkou i s předložkou: Jdu <b>k babičce</b> → ke komu? → 3. pád.</p>',
+    gen() { const [t, p] = CZ_PADY[Math.floor(Math.random() * CZ_PADY.length)]; return { key: t, q: `Ve kterém pádě je tučné slovo?<br><span class="cz-q">${t}</span>`, a: `${p}. pád`, choices: [1, 2, 3, 4, 5, 6, 7].map(n => `${n}. pád`), hint: 'Zeptej se na tučné slovo pádovými otázkami.', explain: `${t}<br>Ptáme se: ${PAD_Q[p]} → <b>${p}. pád</b>` }; } },
+  { subj: 'cj', id: 'c4-vzory', grade: 4, ico: '🧷', name: 'Vzory podstatných jmen',
+    learn: '<p><b>Mužský rod:</b> pán, hrad, muž, stroj, předseda, soudce. <b>Ženský:</b> žena, růže, píseň, kost. <b>Střední:</b> město, moře, kuře, stavení.</p><p>Urči rod (ten, ta, to) a podle zakončení a životnosti najdi vzor.</p>',
+    gen() { const [w, v, r] = CZ_VZ[Math.floor(Math.random() * CZ_VZ.length)], others = czShuffle(CZ_VZORY[r].filter(x => x !== v)).slice(0, 2);
+      return { key: w, q: `Podle jakého vzoru se skloňuje toto slovo?<br><span class="cz-q">${w}</span>`, a: v, choices: czShuffle([v, ...others]), hint: `Je to rod ${r === 'm' ? 'mužský (ten)' : r === 'f' ? 'ženský (ta)' : 'střední (to)'}.`, explain: `${w} – rod ${r === 'm' ? 'mužský' : r === 'f' ? 'ženský' : 'střední'}, vzor <b>${v}</b>` }; } },
+  // ---------- 5. třída ----------
+  { subj: 'cj', id: 'c5-konc', grade: 5, ico: '🔚', name: 'Koncovky podstatných jmen',
+    learn: '<p>V 1. pádě množného čísla: rod mužský <b>životný</b> (kdo?) → <b>i</b> (kluci, psi, ptáci – vzor pán). Rod mužský <b>neživotný</b> (co?) → <b>y</b> (stromy, vlaky – vzor hrad).</p>',
+    gen: czBank(CZ_KONC, { hint: 'Je to živé (kdo?), nebo neživé (co?)?', note: '' }) },
+  { subj: 'cj', id: 'c5-shoda', grade: 5, ico: '🤝', name: 'Shoda přísudku s podmětem',
+    learn: `<p>Koncovka slovesa v minulém čase se řídí <b>podmětem</b>.</p><p>${SHODA_NOTE}</p><p>Pozor: <b>děti</b> si hrál<b>y</b>, <b>koně</b> běžel<b>i</b>, <b>rodiče</b> přišl<b>i</b>.</p>`,
+    gen: czBank(CZ_SHODA.map(x => [x[0], x[1], ['i', 'y', 'a'].filter(c => c !== x[1])]), { hint: 'Kdo nebo co to dělá? Jaký je to rod?', note: SHODA_NOTE, order: ['i', 'y', 'a'] }) },
+  { subj: 'cj', id: 'c5-mep', grade: 5, ico: '🙋', name: 'mě, nebo mně ve větách',
+    learn: '<p><b>Mně</b> = komu? (3. pád) a o kom? (6. pád): Dej <b>mně</b> knihu. Mluvili o <b>mně</b>.</p><p><b>Mě</b> = koho? (2. a 4. pád): Pozvi <b>mě</b>. Bez <b>mě</b> nechoď.</p><p>Fígl: zkus místo toho dát <b>tobě / tebe</b>. Tobě → mně, tebe → mě.</p>',
+    gen: czBank(CZ_MEP, { hint: 'Zkus to nahradit: tobě → mně, tebe → mě.' }) }
+);
+// the bank notes for vyjmenovaná slova and koncovky depend on the answer
+TOPICS.filter(t => ['c3-vyjm1', 'c3-vyjm2'].includes(t.id)).forEach(t => { const g = t.gen; t.gen = () => { const q = g(); q.explain += VY_NOTE([0, q.a]); return q; }; });
+TOPICS.filter(t => t.id === 'c5-konc').forEach(t => { const g = t.gen; t.gen = () => { const q = g(); q.explain += KONC_NOTE([0, q.a]); return q; }; });
 /* ---------- MATIKA: cards, progress, lessons, rewards ---------- */
 // [emoji, name, fact, rarity 1–3]
 const CARDS = [
@@ -3424,7 +3662,8 @@ const CARDS = [
 ];
 const RAR = { 1: ['Běžná', '#9FD8FF'], 2: ['Vzácná', '#D9C4FF'], 3: ['Legendární', '#FFD36E'] };
 const mmGet = (k, d) => store.get('mm-' + k, d), mmSet = (k, v) => store.set('mm-' + k, v);
-let grade = mmGet('grade', 5);
+let grade = mmGet('grade', 5), subj = mmGet('subj', 'ma');
+const subjOf = t => t.subj || 'ma';
 const starsOf = () => mmGet('stars', {});
 const totalStars = () => Object.values(starsOf()).reduce((a, b) => a + b, 0);
 const cardsOwned = () => new Set(mmGet('cards', []));
@@ -3437,15 +3676,17 @@ const CL_ORDER = () => [...PAGES.filter(p => /^f-|horse|zebra|uni|unicorn/.test(
 /* ---------- home ---------- */
 function renderHome() {
   $('#starCount').textContent = totalStars();
+  $('#mmSubj').innerHTML = [['ma', '🔢', 'Matika'], ['cj', '📖', 'Čeština']].map(([id, ico, nm]) => `<button data-s="${id}" aria-pressed="${id === subj}"><span class="ico">${ico}</span>${nm}</button>`).join('');
   $('#mmGrades').innerHTML = [1, 2, 3, 4, 5].map(g => `<button class="chip" data-g="${g}" aria-pressed="${g === grade}" aria-label="${g}. třída">${g}.</button>`).join('');
   const S = starsOf();
-  $('#mmTopics').innerHTML = TOPICS.filter(t => t.grade === grade).map(t => {
+  $('#mmTopics').innerHTML = TOPICS.filter(t => t.grade === grade && subjOf(t) === subj).map(t => {
     const s = S[t.id] || 0;
     return `<button class="mm-topic" data-t="${t.id}"><span class="ico">${t.ico}</span><span class="nm">${t.name}</span><span class="st">${'★'.repeat(s)}<i>${'★'.repeat(3 - s)}</i></span></button>`;
   }).join('');
   const pz = pzUnlocked().size, cl = clUnlocked().size, cd = cardsOwned().size;
   $('#mmPz').textContent = `${pz} / ${ANIMALS.length}`; $('#mmCl').textContent = `${cl} / ${PAGES.length}`; $('#mmCd').textContent = `${cd} / ${CARDS.length}`;
 }
+$('#mmSubj').addEventListener('click', ev => { const b = ev.target.closest('[data-s]'); if (!b) return; subj = b.dataset.s; mmSet('subj', subj); sfx.pick(); renderHome(); });
 $('#mmGrades').addEventListener('click', ev => { const b = ev.target.closest('[data-g]'); if (!b) return; grade = +b.dataset.g; mmSet('grade', grade); sfx.pick(); renderHome(); });
 $('#mmTopics').addEventListener('click', ev => { const b = ev.target.closest('.mm-topic'); if (!b) return; ac(); sfx.pick(); openLearn(TOPICS.find(t => t.id === b.dataset.t)); });
 $('#mmDaily').addEventListener('click', () => { ac(); sfx.pick(); startLesson(null); });
@@ -3458,6 +3699,7 @@ function drawHomeArt() {}
 let curTopic = null;
 function openLearn(t) {
   curTopic = t;
+  $('#lnGo').textContent = subjOf(t) === 'cj' ? 'Rozumím, jdu na to!' : 'Rozumím, jdu počítat!';
   $('#lnTitle').textContent = t.name;
   const ex = t.gen();
   $('#lnBody').innerHTML = `<div class="ln-card"><div class="ln-ico">${t.ico}</div>${t.learn}</div>
@@ -3472,7 +3714,7 @@ const LS_N = 10;
 let L = null;
 function pickDaily() {
   // review mix: current grade plus a bit of earlier ones, weaker topics more often
-  const S = starsOf(), pool = TOPICS.filter(t => t.grade <= grade && t.grade >= grade - 2);
+  const S = starsOf(), pool = TOPICS.filter(t => subjOf(t) === subj && t.grade <= grade && t.grade >= grade - 2);
   const w = pool.map(t => (t.grade === grade ? 3 : 1) * (4 - (S[t.id] || 0)));
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
@@ -3480,8 +3722,8 @@ function pickDaily() {
 }
 function startLesson(topic) {
   const locked = ANIMALS.filter(a => !pzUnlocked().has(akey(a)));
-  L = { topic, done: 0, mistakes: 0, tries: 0, q: null, qt: null, vals: [], field: 0, animal: locked[0] || ANIMALS[Math.floor(Math.random() * ANIMALS.length)], order: [...Array(LS_N).keys()].sort(() => Math.random() - .5) };
-  $('#lsTitle').textContent = topic ? topic.name : 'Trénink dne';
+  L = { seen: new Set(), topic, done: 0, mistakes: 0, tries: 0, q: null, qt: null, vals: [], field: 0, animal: locked[0] || ANIMALS[Math.floor(Math.random() * ANIMALS.length)], order: [...Array(LS_N).keys()].sort(() => Math.random() - .5) };
+  $('#lsTitle').textContent = topic ? topic.name : (subj === 'cj' ? 'Trénink češtiny' : 'Trénink matiky');
   show('lesson');
   drawLessonPic();
   nextQuestion();
@@ -3496,7 +3738,8 @@ function nextQuestion() {
   renderDots($('#lsDots'), LS_N, L.done);
   if (L.done >= LS_N) { finishLesson(); return; }
   L.qt = L.topic || pickDaily();
-  L.q = L.qt.gen(); L.tries = 0; L.field = 0; L.si = 0; L.stTries = 0; L.log = [];
+  for (let k = 0; k < 30; k++) { L.q = L.qt.gen(); if (!L.seen.has(L.q.key || L.q.q)) break; }
+  L.seen.add(L.q.key || L.q.q); L.tries = 0; L.field = 0; L.si = 0; L.stTries = 0; L.log = [];
   const n = L.q.steps ? 1 : Array.isArray(L.q.a) ? L.q.a.length : 1;
   L.vals = Array(n).fill('');
   $('#lsTopic').textContent = L.topic ? '' : `${L.qt.grade}. tř. · ${L.qt.name}`;
@@ -3505,7 +3748,7 @@ function nextQuestion() {
   if (L.q.choices) {
     $('#lsAns').innerHTML = ''; $('#lsPad').hidden = true;
     $('#lsChoices').hidden = false;
-    $('#lsChoices').innerHTML = L.q.choices.map(c => `<button class="ls-choice" data-c="${c}">${c}</button>`).join('');
+    $('#lsChoices').innerHTML = L.q.choices.map(c => `<button class="ls-choice${L.q.choices.some(x => String(x).length > 4) ? ' long' : ''}" data-c="${c}">${c}</button>`).join('');
   } else {
     $('#lsChoices').hidden = true; $('#lsPad').hidden = false;
     renderAns();
@@ -3574,12 +3817,13 @@ function checkStep() {
 function finishQuestion(btn) {
   L.lock = true;
   if (btn) btn.classList.add('ok');
-  $('#lsMsg').className = 'ls-msg ok'; $('#lsMsg').innerHTML = L.q.steps ? `${pk(['Hotovo!', 'Výborně!', 'Paráda!'])} ${L.q.final || ''}` : pk(['Správně!', 'Výborně!', 'Super!', 'Paráda!', 'Přesně tak!']);
+  $('#lsMsg').className = 'ls-msg ok'; $('#lsMsg').innerHTML = L.q.steps ? `${pk(['Hotovo!', 'Výborně!', 'Paráda!'])} ${L.q.final || ''}` : pk(['Správně!', 'Výborně!', 'Super!', 'Paráda!', 'Přesně tak!']) + (L.q.filled ? ` <b>${L.q.filled}</b>` : '');
+  if (L.q.filled) $('#lsQ .cz-q') && ($('#lsQ .cz-q').innerHTML = $('#lsQ .cz-q').innerHTML.replace('<span class="gap">_</span>', `<span class="gap ok">${L.q.a}</span>`));
   if (L.tries) L.mistakes++;
   const tile = $(`#lsCover i[data-k="${L.order[L.done]}"]`); if (tile) tile.classList.add('off');
   L.done++; sfx.snap();
   const r = $('#lsQ').getBoundingClientRect(); sparkleAt(r.left + r.width / 2, r.top + r.height / 2, 14);
-  setTimeout(() => { L.lock = false; nextQuestion(); }, L.q.steps ? 1800 : 900);
+  setTimeout(() => { if (!L) return; L.lock = false; nextQuestion(); }, L.q.steps ? 1800 : 900);
 }
 function check(btn) {
   if (L.q.steps) { checkStep(); return; }
@@ -3651,7 +3895,7 @@ document.addEventListener('pointerdown', ev => { if (!reduceMotion) sparkleAt(ev
   for (let i = 0; i < 28; i++) h += `<i style="left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;font-size:${Math.round(10 + Math.random() * 18)}px;color:${cols[i % cols.length]};animation-delay:${(Math.random() * 2.4).toFixed(2)}s;animation-duration:${(1.8 + Math.random() * 1.8).toFixed(2)}s">✦</i>`;
   $('#twinkles').innerHTML = h;
 })();
-$('#mascot').addEventListener('click', ev => { bounce(ev.currentTarget); sparkleAt(ev.clientX, ev.clientY, 24); say('Ahoj Maruško! Jdeme počítat?'); });
+$('#mascot').addEventListener('click', ev => { bounce(ev.currentTarget); sparkleAt(ev.clientX, ev.clientY, 24); say('Ahoj Maruško! Jdeme se učit?'); });
 (function installHint() {
   const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   let framed = false; try { framed = window.self !== window.top; } catch (e) { framed = true; }
