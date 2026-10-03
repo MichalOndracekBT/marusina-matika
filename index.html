@@ -369,6 +369,17 @@ button:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
 .ctile.locked svg{filter:grayscale(1) opacity(.45)}
 .ctile .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;z-index:2;pointer-events:none}
 
+.cl-stage{position:relative}
+.num-mode .cl-stage{padding:0 4px 4px}
+.num-mode #clSvg{border-radius:14px}
+.nrow{display:flex;align-items:center;justify-content:center;gap:12px}
+.cl-zoom{display:flex;align-items:center;gap:6px}
+.cl-zoom span{font-size:20px}
+.cl-zoom[hidden]{display:none}
+.cl-zoom button{width:44px;height:40px;border-radius:14px;background:var(--card);box-shadow:0 3px 0 var(--shadow);font-size:26px;font-weight:800;line-height:1}
+.cl-zoom button:disabled{opacity:.35}
+.cl-zoom-hint{position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.85);border-radius:12px;padding:4px 10px;font-size:13px;font-weight:700;color:var(--muted);pointer-events:none}
+
 /* HÁDANKY + PEXESO */
 .mode-logic{background:linear-gradient(145deg,#FFE08A,#FFB3B3)}
 .mode-memo{background:linear-gradient(145deg,#B8F0D8,#C9D8FF)}
@@ -662,7 +673,7 @@ table.col tr.res td{color:var(--tomato)}
         <div class="sizes" id="clSizes"><button data-size="6" aria-label="Tenký štětec"><i style="width:6px;height:6px"></i></button><button data-size="14" aria-label="Střední štětec"><i style="width:12px;height:12px"></i></button><button data-size="28" aria-label="Tlustý štětec"><i style="width:20px;height:20px"></i></button></div>
         <div class="stk-sizes" id="stkSizes" hidden><button data-s="0.7" aria-label="Malá nálepka"><i style="font-size:13px">⭐</i></button><button data-s="1" aria-label="Střední nálepka"><i style="font-size:18px">⭐</i></button><button data-s="1.45" aria-label="Velká nálepka"><i style="font-size:24px">⭐</i></button><button data-del aria-label="Smazat nálepku">🗑️</button></div>
       </div>
-      <div class="nprog" id="nProg"></div>
+      <div class="nrow"><div class="nprog" id="nProg"></div><div class="cl-zoom" id="clZoom" hidden><button data-z="out" aria-label="Oddálit">−</button><span>🔍</span><button data-z="in" aria-label="Přiblížit">+</button></div></div>
       <div class="palette" id="palette"></div>
     </div>
   </section>
@@ -1921,7 +1932,8 @@ const CL_CFG = {
 
 /* ---------- MATIKA: coloring by examples, locks, fashion stickers ---------- */
 CL_CFG.modes = [['free', '🎨', 'Vybarvi'], ['num', '🧮', 'Podle příkladů'], ['scene', '✨', 'Navrhni']];
-CL_CFG.minClr = 6.5;
+CL_CFG.minClr = 7.5;
+CL_CFG.zoom = true;
 CL_CFG.stickers = [
   { k: 'bow', name: 'Mašle', svg: p('M0 0 L-42 -26 Q-50 0 -42 26 Z') + p('M0 0 L42 -26 Q50 0 42 26 Z') + c(0, 0, 11) },
   { k: 'heart', name: 'Srdíčko', svg: CL_HEART(1.1) },
@@ -2222,7 +2234,7 @@ function numPlan(pg) {
 }
 function numLabel(i) {
   const P = C.plan, q = P.pts[i], txt = CL_CFG.numText ? CL_CFG.numText(C.pg, i, P.num[i]) : String(P.num[i]);
-  const fs = Math.max(CL_CFG.numText ? 8.5 : 9, Math.min(CL_CFG.numText ? 24 : 30, q.clr * 1.45, txt.length > 2 ? 3.4 * q.clr / txt.length : 99));
+  const fs = Math.max(CL_CFG.numText ? 11 : 9, Math.min(CL_CFG.numText ? 26 : 30, q.clr * 1.45, txt.length > 2 ? 3.7 * q.clr / txt.length : 99));
   const t = document.createElementNS(CL_NS, 'text');
   t.setAttribute('class', 'nlab'); t.setAttribute('x', q.x.toFixed(1)); t.setAttribute('y', q.y.toFixed(1));
   t.setAttribute('font-size', fs.toFixed(1)); t.dataset.i = i; t.dataset.n = P.num[i]; t.textContent = txt;
@@ -2289,6 +2301,30 @@ function numTap(ev) {
   }
 }
 
+// zoom & pan of the picture (colour by examples): +/- buttons, two-finger pinch, one-finger drag when zoomed in
+function applyView() {
+  const v = C.view; v.s = Math.max(100, Math.min(400, v.s)); v.x = Math.max(0, Math.min(400 - v.s, v.x)); v.y = Math.max(0, Math.min(400 - v.s, v.y));
+  $('#clSvg').setAttribute('viewBox', `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.s.toFixed(1)} ${v.s.toFixed(1)}`);
+  const zb = document.getElementById('clZoom'); if (zb) zb.querySelector('[data-z="out"]').disabled = v.s >= 400;
+}
+function zoomTo(s, cx, cy) { const v = C.view; v.x = cx - (cx - v.x) * s / v.s; v.y = cy - (cy - v.y) * s / v.s; v.s = s; applyView(); }
+function zoomMove(ev) {
+  const p = C.ptrs.get(ev.pointerId); p.x = ev.clientX; p.y = ev.clientY;
+  if (C.pinch && C.ptrs.size >= 2) {
+    const [a, b] = [...C.ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), P = C.pinch;
+    C.view = { ...P.v }; zoomTo(P.v.s * P.d / Math.max(20, d), P.c.x, P.c.y); return;
+  }
+  if (!p.moved && Math.hypot(p.x - p.x0, p.y - p.y0) < 8) return;
+  p.moved = true;
+  if (C.view.s >= 400) return;
+  const k = C.view.s / $('#clSvg').getBoundingClientRect().width;
+  C.view.x -= (p.x - (p.lx ?? p.x0)) * k; C.view.y -= (p.y - (p.ly ?? p.y0)) * k; p.lx = p.x; p.ly = p.y; applyView();
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('#clZoom button'); if (!b || !C) return;
+  const v = C.view, s = b.dataset.z === 'in' ? v.s / 1.6 : b.dataset.z === 'out' ? v.s * 1.6 : 400;
+  zoomTo(s, v.x + v.s / 2, v.y + v.s / 2); sfx.pick();
+});
 function openColor(pg, mode) {
   ac();
   mode = mode === 'num' ? 'num' : 'free';
@@ -2297,6 +2333,8 @@ function openColor(pg, mode) {
   C = { pg, mode, regions: [...svg.querySelectorAll('.r')], undo: [], ink: svg.querySelector('#clInk'), stk: svg.querySelector('#clStk'), num: svg.querySelector('#clNum'), drawing: null, drag: null, sel: null };
   $('#clTitle').textContent = pg.name;
   $('#color').classList.toggle('num-mode', mode === 'num');
+  C.view = { x: 0, y: 0, s: 400 }; C.ptrs = new Map(); applyView();
+  const zb = document.getElementById('clZoom'); if (zb) zb.hidden = !(CL_CFG.zoom && mode === 'num');
   if (mode === 'num') {
     setupNumbers();
   } else {
@@ -2315,7 +2353,14 @@ function clPt(ev) { const svg = $('#clSvg'), pt = svg.createSVGPoint(); pt.x = e
 const stkOut = (x, y) => x < -6 || x > 406 || y < -6 || y > 406;
 $('#clSvg').addEventListener('pointerdown', ev => {
   if (!C) return;
-  if (C.mode === 'num') { numTap(ev); return; }
+  if (C.mode === 'num') {
+    if (!CL_CFG.zoom) { numTap(ev); return; }
+    ev.preventDefault();
+    C.ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, target: ev.target, moved: false });
+    try { $('#clSvg').setPointerCapture(ev.pointerId); } catch (e) {}
+    if (C.ptrs.size === 2) { const [a, b] = [...C.ptrs.values()]; a.moved = b.moved = true; C.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), v: { ...C.view }, c: clPt({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 }) }; }
+    return;
+  }
   const sg = ev.target.closest && ev.target.closest('.stk');
   if (tool === 'sticker') {
     if (!sg) { selectStk(null); return; }
@@ -2353,6 +2398,7 @@ $('#clSvg').addEventListener('pointerdown', ev => {
   C.undo.push({ t: 'fill', list: [[i, prev]] }); sfx.paint(); saveColor(); sparkleAt(ev.clientX, ev.clientY, 12);
 });
 $('#clSvg').addEventListener('pointermove', ev => {
+  if (C && C.mode === 'num' && CL_CFG.zoom && C.ptrs.has(ev.pointerId)) { ev.preventDefault(); zoomMove(ev); return; }
   const g = C && C.drag;
   if (g && ev.pointerId === g.id) {
     ev.preventDefault();
@@ -2368,6 +2414,12 @@ $('#clSvg').addEventListener('pointermove', ev => {
   d.el.setAttribute('d', d.el.getAttribute('d') + ` L${q.x.toFixed(1)} ${q.y.toFixed(1)}`); d.x = q.x; d.y = q.y;
 });
 function endInk(ev) {
+  if (C && C.mode === 'num' && CL_CFG.zoom && C.ptrs.has(ev.pointerId)) {
+    const p = C.ptrs.get(ev.pointerId); C.ptrs.delete(ev.pointerId);
+    if (C.ptrs.size < 2) C.pinch = null;
+    if (!p.moved && ev.type === 'pointerup') numTap({ target: p.target, clientX: p.x0, clientY: p.y0, preventDefault() {} });
+    return;
+  }
   const g = C && C.drag;
   if (g && ev.pointerId === g.id) {
     C.drag = null;
